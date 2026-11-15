@@ -16,8 +16,13 @@ Stack: Python, DuckDB, dbt (snapshots for SCD2), Streamlit, pytest.
 
 **Live demo:** [gdpr-deletion-workflow.streamlit.app](https://gdpr-deletion-workflow.streamlit.app/) (if the app has been asleep, click **Reset demo data** in the sidebar first, then try customer `C00042`)
 
-<!-- Screenshot: docs/images/discover.png -->
-<!-- Screenshot: docs/images/erase_result.png -->
+**Discover:** every copy of the customer's data, classified against the data map (values are never shown)
+
+![Discovery](docs/images/discover.png)
+
+**Erase:** 22 locations changed, 0 personal data left outside backups, 0 after a backup restore drill
+
+![Erasure result](docs/images/erase_result.png)
 
 ## Architecture
 
@@ -70,6 +75,11 @@ The old email no longer exists in the CRM, so a workflow that looks up the custo
 * `customer_id` replaced with a random `ERASED-…` token shared across the versions and the person's orders; the mapping is never stored
 * `dbt_scd_id` recomputed, because dbt builds it as `md5(customer_id || valid_from)`, which would otherwise let anyone with a list of customer IDs re-link the rows
 
+Before and after:
+
+![SCD2 history before erasure (values masked in the UI)](docs/images/scd2_before.png)
+![SCD2 history after erasure](docs/images/scd2_after.png)
+
 After erasure, `fct_orders` still joins each order to the right SCD2 version (`segment_at_order` is still correct), revenue totals are unchanged, and nothing points back to the person.
 
 ## The audit log
@@ -94,6 +104,8 @@ After erasure, `fct_orders` still joins each order to the right SCD2 version (`s
   "prev_hash": "…", "entry_hash": "…"
 }
 ```
+
+![Audit log](docs/images/audit_log.png)
 
 Three safeguards:
 
