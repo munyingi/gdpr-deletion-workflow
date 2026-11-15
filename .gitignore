@@ -1,0 +1,15 @@
+# generated data (rebuild with `make demo`)
+data/
+# HMAC key: never commit
+.secrets/
+# dbt
+dbt/target/
+dbt/logs/
+dbt/.user.yml
+logs/
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.DS_Store

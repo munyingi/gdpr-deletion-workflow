@@ -1,0 +1,7 @@
+gdpr:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '../data/warehouse/warehouse.duckdb') }}"
+      threads: 1

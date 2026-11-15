@@ -1,0 +1,91 @@
+# Data map: every place customer personal data is known to live, and what
+# an erasure request does to it. The discovery scanner checks the whole
+# estate against this map, so a location holding PII that is missing from
+# here shows up as UNMAPPED instead of being silently skipped.
+
+subject:
+  key: customer_id
+  identifier_kinds: [customer_id, email, phone, full_name, street_address]
+
+# Landing zone files (immutable-by-convention, so erasure rewrites them).
+raw_files:
+  - name: crm_customer_extracts
+    glob: raw/crm/customers_*.csv
+    format: csv
+    match: {customer_id: customer_id}
+    action: delete
+
+  - name: shop_orders
+    glob: raw/shop/orders_*.jsonl
+    format: jsonl
+    match: {customer_id: customer_id}
+    action: anonymise
+    key_column: customer_id
+    pii_columns: [customer_email, shipping_name, shipping_address]
+    retention_reason: >-
+      Order amounts and dates are bookkeeping records with a statutory
+      retention period under the Finnish Accounting Act. Personal fields are
+      removed and the customer link is replaced with a random token.
+
+  - name: support_tickets
+    glob: raw/support/tickets_*.csv
+    format: csv
+    match: {customer_email: email}
+    action: delete
+    free_text: [subject, body]
+
+  - name: web_events
+    glob: raw/web/events_*.jsonl
+    format: jsonl
+    match: {customer_id: customer_id}
+    action: delete
+
+# Warehouse tables owned by ingestion / snapshots. Everything in the
+# staging and marts schemas is derived by dbt and rebuilt after erasure.
+warehouse:
+  - table: raw.customers
+    match: {customer_id: customer_id}
+    action: delete
+
+  - table: raw.orders
+    match: {customer_id: customer_id}
+    action: anonymise
+    key_column: customer_id
+    pii_columns: [customer_email, shipping_name, shipping_address]
+    retention_reason: Statutory bookkeeping retention (Finnish Accounting Act).
+
+  - table: raw.support_tickets
+    match: {customer_email: email}
+    action: delete
+    free_text: [subject, body]
+
+  - table: raw.web_events
+    match: {customer_id: customer_id}
+    action: delete
+
+  # SCD2 history. By design it keeps every past version of the customer,
+  # including old emails and addresses that no longer exist in the CRM.
+  # Every version is anonymised in place: personal columns are nulled, the
+  # natural key is replaced with a random token and dbt_scd_id (an md5 of
+  # the natural key) is recomputed so the old key cannot be re-derived.
+  - table: snapshots.customers_snapshot
+    match: {customer_id: customer_id}
+    action: anonymise_history
+    key_column: customer_id
+    pii_columns: [first_name, last_name, email, phone, street_address,
+                  postal_code, city, date_of_birth]
+    retention_reason: >-
+      Non-personal attributes (segment, opt-in flag, validity dates) are kept
+      so historical segment counts stay correct.
+
+derived:
+  schemas: [staging, marts]
+  treatment: rebuilt by `dbt run` after source erasure
+
+backups:
+  dir: backups
+  retention_days: 35
+  treatment: >-
+    Backups are immutable. Erased subjects go on an HMAC suppression list
+    that is applied on every restore and on every re-ingest. Backups age out
+    after the retention period, after which no copy remains.
