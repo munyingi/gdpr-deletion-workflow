@@ -14,6 +14,8 @@ This project is a working erasure workflow for a small, fake Finnish web shop. G
 
 Stack: Python, DuckDB, dbt (snapshots for SCD2), Streamlit, pytest.
 
+**Live demo:** [gdpr-deletion-workflow.streamlit.app](https://gdpr-deletion-workflow.streamlit.app/) (if the app has been asleep, click **Reset demo data** in the sidebar first, then try customer `C00042`)
+
 <!-- Screenshot: docs/images/discover.png -->
 <!-- Screenshot: docs/images/erase_result.png -->
 
