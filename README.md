@@ -1,5 +1,7 @@
 # GDPR deletion requests
 
+[![ci](https://github.com/munyingi/gdpr-deletion-workflow/actions/workflows/ci.yml/badge.svg)](https://github.com/munyingi/gdpr-deletion-workflow/actions/workflows/ci.yml)
+
 A customer emails *"delete all my data."* Under GDPR Article 17 the company has one month to do it. The problem is that their data is not in one place: it is copied across raw landing files, warehouse tables, dbt models, nightly backups and, hardest of all, **SCD Type 2 history tables, which by design keep every past version of a record.**
 
 This project is a working erasure workflow for a small, fake Finnish web shop. Give it a customer ID and it:
